@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>收入纳税明细</title>
+    <style>
+        /* 基础样式复位 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: #F7F8FA;
+            color: #333;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* 顶部导航栏 */
+        .header {
+            background-color: #fff;
+            height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 0.5px solid #E5E5E5;
+        }
+
+        .header .back {
+            color: #2472e7;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+
+        .header .back::before {
+            content: '';
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-left: 2px solid #2472e7;
+            border-bottom: 2px solid #2472e7;
+            transform: rotate(45deg);
+            margin-right: 4px;
+        }
+
+        .header .title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #000;
+        }
+
+        .header .action {
+            color: #2472e7;
+            font-size: 15px;
+        }
+
+        /* 统计总额区域 */
+        .summary-card {
+            background-color: #fff;
+            padding: 12px 16px;
+            /* 替换margin-bottom为padding-bottom，并添加背景色作为分隔，以防止滚动时内容透出 */
+            padding-bottom: 22px; 
+            margin-bottom: 0;
+            /* 使用sticky定位，紧跟在header下方 */
+            position: sticky;
+            top: 46px; /* header高度 */
+            z-index: 90;
+            /* 为了视觉分隔，可以给summary-card加个下边框或者利用伪元素遮挡下面滚上来的内容 */
+            /* 这里简单处理：让它有下边距效果但实际上是sticky的一部分 */
+            border-top: 12px solid #F7F8FA; /* 模拟原来的margin-bottom */
+            padding-top: 12px; /* 恢复原来的内边距 */
+
+            border-bottom: 10px solid #F7F8FA; /* 模拟原来的margin-bottom */
+            padding-bottom: 12px; /* 恢复原来的内边距 */
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+        }
+
+        .summary-label {
+            font-size: 15px;
+            color: #333;
+        }
+
+        .icon-help {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            border: 1px solid #91B9EB;
+            color: #91B9EB;
+            border-radius: 50%;
+            font-size: 11px;
+            text-align: center;
+            line-height: 13px;
+            margin-left: 5px;
+        }
+
+        .summary-value {
+            font-size: 16px;
+            color: #333;
+        }
+
+        /* 列表项样式 */
+        .detail-item {
+            background-color: #fff;
+            padding: 18px 16px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .item-left {
+            flex: 1;
+        }
+
+        .item-title {
+            font-size: 17px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: #333; /* 这里是深黑色 */
+        }
+
+        .item-info {
+            font-size: 14px;
+            margin-bottom: 4px;
+            display: block; /* 改为块状流式布局，不强制列对齐 */
+        }
+
+        .info-label {
+            color: #8E8E93; /* 标签保持灰色 */
+        }
+
+        .info-content {
+            color: #8E8E93;    /* 核心内容颜色同步 item-title */
+            margin-left: 6px; /* 标签后的水平间距，实现你说的“空一下”的效果 */
+        }
+
+        .item-right {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-end;
+            min-width: 90px;
+            position: relative; /* 增加相对定位，为箭头绝对定位做准备 */
+        }
+
+        .item-date {
+            font-size: 16px;
+            color: #000;
+            margin-bottom: 20px;
+            margin-right: 30px;
+        }
+
+        .arrow-right {
+            width: 10px;
+            height: 10px;
+            border-top: 2px solid #C7C7CC;
+            border-right: 2px solid #C7C7CC;
+            /* 使用绝对定位使其垂直居中 */
+            position: absolute;
+            top: 50%;
+            right: 0;
+            /* 先向上偏移50%高度，再旋转45度 */
+            transform: translateY(-50%) rotate(45deg);
+        }
+
+        /* 弹窗样式 */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 200; 
+            left: 0;
+            top: 0;
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.4); 
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            right: 15px;
+            top: 5px;
+            cursor: pointer;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .btn-submit {
+            background-color: #2472e7;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="back">返回</div>
+        <div class="title">收入纳税明细</div>
+        <div class="action">批量申诉</div>
+    </div>
+
+    <div class="summary-card">
+        <div class="summary-row">
+            <div class="summary-label">收入合计 <span class="icon-help">?</span></div>
+            <div class="summary-value" id="total-income">0.00元</div>
+        </div>
+        <div class="summary-row">
+            <div class="summary-label">已申报税额合计：</div>
+            <div class="summary-value" id="total-tax">0.00元</div>
+        </div>
+    </div>
+
+    <div id="details-list"></div>
+
+    <!-- 弹窗结构 -->
+    <div id="myModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 style="text-align: center; margin-bottom: 20px;">批量申述</h2>
+            <div class="form-group">
+                <label for="totalIncomeInput">收入合计:</label>
+                <input type="number" id="totalIncomeInput" step="0.01" placeholder="请输入收入合计">
+            </div>
+            <div class="form-group">
+                <label for="yearInput">年份:</label>
+                <input type="number" id="yearInput" value="2025">
+            </div>
+            <div class="form-group">
+                <label for="startMonthInput">开始月份:</label>
+                <input type="number" id="startMonthInput" value="1" min="1" max="12" placeholder="1-12">
+            </div>
+            <div class="form-group">
+                <label for="endMonthInput">结束月份:</label>
+                <input type="number" id="endMonthInput" value="12" min="1" max="12" placeholder="1-12">
+            </div>
+            <div class="form-group">
+                <label for="companyInput">公司:</label>
+                <input type="text" id="companyInput" value="立讯精密工业股份有限公司">
+            </div>
+            <button class="btn-submit" id="confirmBtn">确定</button>
+        </div>
+    </div>
+
+    <script>
+        // 初始数据
+        let taxData = {
+            "annual_statistics": {
+                "total_income": 912108.03,
+                "total_tax_amount": 212317.81
+            },
+            "monthly_details": [
+                { "month": "2025-12", "income": 74173.03, "monthly_tax": 24210.56, "company": "立讯精密工业股份有限公司" },
+                { "month": "2025-11", "income": 76901.25, "monthly_tax": 25165.67, "company": "立讯精密工业股份有限公司" },
+                { "month": "2025-10", "income": 74523.12, "monthly_tax": 21044.25, "company": "立讯精密工业股份有限公司" },
+                { "month": "2025-09", "income": 78115.61, "monthly_tax": 21930.09, "company": "立讯精密工业股份有限公司" },
+                { "month": "2025-08", "income": 72350.00, "monthly_tax": 20205.00, "company": "立讯精密工业股份有限公司" },
+                { "month": "2025-07", "income": 79800.00, "monthly_tax": 22440.00, "company": "立讯精密工业股份有限公司" },
+                { "month": "2025-06", "income": 75600.00, "monthly_tax": 20430.00, "company": "立讯精密工业股份有限公司" },
+                { "month": "2025-05", "income": 77120.00, "monthly_tax": 16952.25, "company": "立讯精密工业股份有限公司" },
+                { "month": "2025-04", "income": 72800.00, "monthly_tax": 13560.00, "company": "立讯精密工业股份有限公司" },
+                { "month": "2025-03", "income": 78450.00, "monthly_tax": 14169.50, "company": "立讯精密工业股份有限公司" },
+                { "month": "2025-02", "income": 73105.00, "monthly_tax": 7310.50, "company": "立讯精密工业股份有限公司" },
+                { "month": "2025-01", "income": 79210.00, "monthly_tax": 4901.00, "company": "立讯精密工业股份有限公司" }
+            ]
+        };
+
+        // 渲染函数
+        function renderTaxDetails() {
+            document.getElementById('total-income').innerText = taxData.annual_statistics.total_income.toFixed(2) + '元';
+            document.getElementById('total-tax').innerText = taxData.annual_statistics.total_tax_amount.toFixed(2) + '元';
+
+            const listContainer = document.getElementById('details-list');
+            listContainer.innerHTML = '';
+
+            // 按月份倒序排列显示
+            const sortedDetails = [...taxData.monthly_details].sort((a, b) => {
+                return b.month.localeCompare(a.month);
+            });
+
+            sortedDetails.forEach(item => {
+                // 兼容旧数据，如果没有company字段则使用默认值
+                const companyName = item.company || "立讯精密工业股份有限公司";
+                const itemHtml = `
+                    <div class="detail-item">
+                        <div class="item-left">
+                            <div class="item-title">工资薪金</div>
+                            <div class="item-info">
+                                <span class="info-label">所得项目小类：</span><span class="info-content">正常工资薪金</span>
+                            </div>
+                            <div class="item-info">
+                                <span class="info-label">扣缴义务人：</span><span class="info-content">${companyName}</span>
+                            </div>
+                            <div class="item-info">
+                                <span class="info-label">收入：</span><span class="info-content">${parseFloat(item.income).toFixed(2)}元</span>
+                            </div>
+                            <div class="item-info">
+                                <span class="info-label">已申报税额：</span><span class="info-content">${parseFloat(item.monthly_tax).toFixed(2)}元</span>
+                            </div>
+                        </div>
+                        <div class="item-right">
+                            <div class="item-date">${item.month}</div>
+                            <div class="arrow-right"></div>
+                        </div>
+                    </div>
+                `;
+                listContainer.insertAdjacentHTML('beforeend', itemHtml);
+            });
+        }
+
+        // 初始渲染
+        renderTaxDetails();
+
+        // 弹窗逻辑
+        const modal = document.getElementById("myModal");
+        // 获取"批量申诉"按钮 (根据class获取)
+        const btn = document.querySelector(".action");
+        const closeSpan = document.getElementsByClassName("close")[0];
+        const confirmBtn = document.getElementById("confirmBtn");
+
+        // 打开弹窗
+        btn.onclick = function() {
+            modal.style.display = "flex";
+        }
+
+        // 关闭弹窗
+        closeSpan.onclick = function() {
+            modal.style.display = "none";
+        }
+
+        // 点击外部关闭
+        window.onclick = function(event) {
+            if (event.target == modal) {
+                modal.style.display = "none";
+            }
+        }
+
+        // 税率表
+        const taxBrackets = [
+            { limit: 36000, rate: 0.03, deduction: 0 },
+            { limit: 144000, rate: 0.10, deduction: 2520 },
+            { limit: 300000, rate: 0.20, deduction: 16920 },
+            { limit: 420000, rate: 0.25, deduction: 31920 },
+            { limit: 660000, rate: 0.30, deduction: 52920 },
+            { limit: 960000, rate: 0.35, deduction: 85920 },
+            { limit: Infinity, rate: 0.45, deduction: 181920 }
+        ];
+
+        // 计算累计应纳税额
+        function calculateCumulativeTax(cumulativeIncome, monthIndex) {
+            // monthIndex: 1 for Jan, 2 for Feb, etc.
+            
+            // 1. 累计减除费用 (起征点 5000/月)
+            const cumulativeStandardDeduction = 5000 * monthIndex;
+            
+            // 2. 累计社保 (当月工资的 3%)
+            // 由于 cumulativeIncome 是累计工资，且每个月工资都按3%扣，所以直接用累计工资*3%
+            const cumulativeSocialSecurity = cumulativeIncome * 0.03;
+            
+            // 3. 累计公积金 (当月工资的 3%)
+            // 同理，直接用累计工资*3%
+            const cumulativeProvidentFund = cumulativeIncome * 0.03;
+            
+            // 累计应纳税所得额 = 累计收入 - 累计减除费用 - 累计社保 - 累计公积金
+            const taxableIncome = Math.max(0, cumulativeIncome - cumulativeStandardDeduction - cumulativeSocialSecurity - cumulativeProvidentFund);
+            
+            let bracket = taxBrackets.find(b => taxableIncome <= b.limit);
+            // 兜底
+            if (!bracket) bracket = taxBrackets[taxBrackets.length - 1];
+
+            return (taxableIncome * bracket.rate) - bracket.deduction;
+        }
+
+        // 生成数据
+        confirmBtn.onclick = function() {
+            const totalIncome = parseFloat(document.getElementById("totalIncomeInput").value);
+            const year = parseInt(document.getElementById("yearInput").value);
+            const startMonth = parseInt(document.getElementById("startMonthInput").value);
+            const endMonth = parseInt(document.getElementById("endMonthInput").value);
+            const company = document.getElementById("companyInput").value;
+
+            if (isNaN(totalIncome) || isNaN(year) || isNaN(startMonth) || isNaN(endMonth)) {
+                alert("请输入完整的数值信息");
+                return;
+            }
+
+            if (startMonth > endMonth) {
+                alert("开始月份不能大于结束月份");
+                return;
+            }
+            if (startMonth < 1 || endMonth > 12) {
+                alert("月份必须在1-12之间");
+                return;
+            }
+
+            const monthCount = endMonth - startMonth + 1;
+            
+            // 1. 分摊收入 (波动10%)
+            let incomes = [];
+            // 生成随机因子
+            let factors = [];
+            for (let i = 0; i < monthCount; i++) {
+                // 0.9 ~ 1.1
+                factors.push(0.9 + Math.random() * 0.2);
+            }
+            const sumFactors = factors.reduce((a, b) => a + b, 0);
+            
+            // 初步分配并保留2位小数
+            let currentSum = 0;
+            for (let i = 0; i < monthCount; i++) {
+                let val = (factors[i] / sumFactors) * totalIncome;
+                // 向下取整保留2位，避免总和超过
+                val = Math.floor(val * 100) / 100;
+                incomes.push(val);
+                currentSum += val;
+            }
+            
+            // 补齐差额给最后一个月 (或者随机一个月)
+            // 这里简单补给最后一个月
+            const diff = totalIncome - currentSum;
+            incomes[monthCount - 1] = parseFloat((incomes[monthCount - 1] + diff).toFixed(2));
+
+            // 2. 计算每月个税 (累计预扣法)
+            let newMonthlyDetails = [];
+            let cumulativeIncome = 0; // 累计收入
+            let cumulativeTaxPaid = 0; // 累计已缴纳税额
+            
+            // 注意：如果startMonth不是1月，且假设之前月份无收入，则累计收入从0开始
+            // 如果假设是连续申报，通常累计收入应该包含1月至StartMonth-1月的收入。
+            // 但根据需求“自动生成每个月的数据”，且只给了Start-End，隐含假设是这段时间的申报。
+            // 这里按照：StartMonth之前的收入为0，但Deduction按照月份累积计算。
+            
+            for (let i = 0; i < monthCount; i++) {
+                const currentMonthIdx = startMonth + i; // 1-based index
+                const currentIncome = incomes[i];
+                
+                cumulativeIncome += currentIncome;
+                
+                // 计算截止当前的累计应纳税额
+                const totalTaxPayable = calculateCumulativeTax(cumulativeIncome, currentMonthIdx);
+                
+                // 本月应纳税额 = 累计应纳税额 - 累计已缴纳税额
+                let currentTax = totalTaxPayable - cumulativeTaxPaid;
+                
+                // 避免计算误差导致微小负数（理论上不应该，除非收入是负数）
+                if (currentTax < 0) currentTax = 0;
+                
+                cumulativeTaxPaid += currentTax;
+                
+                // 格式化月份字符串 YYYY-MM
+                const monthStr = `${year}-${String(currentMonthIdx).padStart(2, '0')}`;
+                
+                newMonthlyDetails.push({
+                    month: monthStr,
+                    income: currentIncome,
+                    monthly_tax: currentTax,
+                    company: company
+                });
+            }
+
+            // 3. 更新全局数据
+            taxData.monthly_details = newMonthlyDetails;
+            taxData.annual_statistics.total_income = totalIncome;
+            taxData.annual_statistics.total_tax_amount = cumulativeTaxPaid;
+
+            // 4. 重新渲染并关闭弹窗
+            renderTaxDetails();
+            modal.style.display = "none";
+        }
+    </script>
+</body>
+</html>
