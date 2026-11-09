@@ -149,12 +149,6 @@
             margin-left: 6px; /* 标签后的水平间距，实现你说的“空一下”的效果 */
         }
 
-        /* 一次性补偿金的计算口径说明（更浅、更小） */
-        .info-note {
-            color: #B0B0B5;
-            font-size: 12px;
-        }
-
         .item-right {
             text-align: right;
             display: flex;
@@ -511,7 +505,7 @@
                 <div class="calc-row"><span class="k">应纳税所得额</span><span class="v">${fmtMoney(r.taxable)} 元</span></div>
                 <div class="calc-row"><span class="k">适用税率 / 速算扣除数</span><span class="v">${fullyExempt ? '—' : (r.rate * 100) + '% / ' + fmtMoney(r.quickDeduction)}</span></div>
                 <div class="calc-row total"><span class="k">应纳个人所得税</span><span class="v">${fmtMoney(r.tax)} 元</span></div>
-                ${fullyExempt ? '<div class="calc-row"><span class="k info-note">补偿收入未超过 3 倍社平工资，全额免税</span></div>' : ''}
+                ${fullyExempt ? '<div class="calc-row"><span class="k">补偿收入未超过 3 倍社平工资，全额免税</span></div>' : ''}
             `;
         }
 
@@ -543,8 +537,7 @@
                     subCategory: '正常工资薪金',
                     company: item.company || '立讯精密工业股份有限公司',
                     income: parseFloat(item.income),
-                    tax: parseFloat(item.monthly_tax),
-                    extraRows: []
+                    tax: parseFloat(item.monthly_tax)
                 });
             });
 
@@ -555,12 +548,7 @@
                     subCategory: '解除劳动合同一次性补偿金',
                     company: item.company || '立讯精密工业股份有限公司',
                     income: parseFloat(item.income),
-                    tax: parseFloat(item.tax),
-                    extraRows: [
-                        { label: '免税收入（3倍社平工资内）：', value: fmtMoney(item.exempt) + '元', note: true },
-                        { label: '应纳税所得额：', value: fmtMoney(item.taxable) + '元', note: true },
-                        { label: '计税方式：', value: '单独计税·不并入综合所得', note: true }
-                    ]
+                    tax: parseFloat(item.tax)
                 });
             });
 
@@ -568,12 +556,6 @@
             allItems.sort((a, b) => b.month.localeCompare(a.month));
 
             allItems.forEach(item => {
-                const extraHtml = (item.extraRows || []).map(row => `
-                    <div class="item-info">
-                        <span class="${row.note ? 'info-note' : 'info-label'}">${row.label}</span><span class="${row.note ? 'info-note' : 'info-content'}">${row.value}</span>
-                    </div>
-                `).join('');
-
                 const itemHtml = `
                     <div class="detail-item">
                         <div class="item-left">
@@ -590,7 +572,6 @@
                             <div class="item-info">
                                 <span class="info-label">已申报税额：</span><span class="info-content">${item.tax.toFixed(2)}元</span>
                             </div>
-                            ${extraHtml}
                         </div>
                         <div class="item-right">
                             <div class="item-date">${item.month}</div>
